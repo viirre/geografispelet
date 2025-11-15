@@ -1,6 +1,25 @@
 import './style.css'
 import places from './places.js';
 
+// Map tile options - try different ones to compare!
+const TILE_STYLES = {
+    voyager: {
+        labeled: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        nolabels: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        name: 'CARTO Voyager (current)'
+    },
+    positron: {
+        labeled: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        nolabels: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        name: 'CARTO Positron (clearer borders, light)'
+    },
+};
+
+// CHANGE THIS to try different map styles: 'voyager', 'positron', etc.
+const CURRENT_TILE_STYLE = 'positron';
+
 // Game settings
 let gameSettings = {
     difficulty: 'easy',
@@ -15,6 +34,7 @@ let currentPlace = null;
 let hasGuessed = false;
 let roundHistory = [];
 let map = null;
+let tileLayer = null;
 let userMarker = null;
 let placeMarker = null;
 let distanceLine = null;
@@ -94,12 +114,24 @@ function startGame() {
             maxZoom: 10,
             worldCopyJump: true
         });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
     }
+
+    // Remove old tile layer if it exists
+    if (tileLayer) {
+        map.removeLayer(tileLayer);
+    }
+
+    // Add tile layer based on difficulty - show labels only for easy mode
+    const selectedStyle = TILE_STYLES[CURRENT_TILE_STYLE];
+    const tileLayerUrl = gameSettings.difficulty === 'easy'
+        ? selectedStyle.labeled
+        : selectedStyle.nolabels;
+
+    tileLayer = L.tileLayer(tileLayerUrl, {
+        attribution: selectedStyle.attribution,
+        maxZoom: 19,
+        subdomains: 'abcd'
+    }).addTo(map);
 
     nextRound();
 }
