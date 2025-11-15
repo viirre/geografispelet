@@ -24,7 +24,9 @@ const CURRENT_TILE_STYLE = 'positron';
 let gameSettings = {
     difficulty: 'easy',
     rounds: 10,
-    gameType: 'blandat'
+    gameType: 'blandat',
+    zoomEnabled: true,
+    showLabels: false  // Default to labels off
 };
 
 // Game variables
@@ -65,9 +67,18 @@ document.querySelectorAll('[data-rounds]').forEach(btn => {
     });
 });
 
+document.querySelectorAll('[data-zoom]').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('[data-zoom]').forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+        gameSettings.zoomEnabled = this.dataset.zoom === 'enabled';
+    });
+});
+
 // Button event listeners
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+document.getElementById('toggleLabelsCheckbox').addEventListener('change', toggleMapLabels);
 
 function getFilteredPlaces(difficulty, gameType) {
     const allPlaces = places[difficulty];
@@ -85,7 +96,7 @@ function getFilteredPlaces(difficulty, gameType) {
             return allPlaces.filter(p => p.type === 'aoc');
         case 'blandat':
         default:
-            return allPlaces;
+            return allPlaces.filter(p => p.type !== 'aoc' && p.type !== 'docg');
     }
 }
 
@@ -107,13 +118,24 @@ function startGame() {
 
     // Initialize the map
     if (!map) {
-        map = L.map('map', {
+        const mapOptions = {
             center: [20, 0],
             zoom: 2,
             minZoom: 2,
             maxZoom: 10,
             worldCopyJump: true
-        });
+        };
+
+        // Disable zoom if option is set
+        if (!gameSettings.zoomEnabled) {
+            mapOptions.zoomControl = false;
+            mapOptions.scrollWheelZoom = false;
+            mapOptions.doubleClickZoom = false;
+            mapOptions.touchZoom = false;
+            mapOptions.boxZoom = false;
+        }
+
+        map = L.map('map', mapOptions);
     }
 
     // Remove old tile layer if it exists
@@ -121,9 +143,9 @@ function startGame() {
         map.removeLayer(tileLayer);
     }
 
-    // Add tile layer based on difficulty - show labels only for easy mode
+    // Add tile layer based on showLabels setting
     const selectedStyle = TILE_STYLES[CURRENT_TILE_STYLE];
-    const tileLayerUrl = gameSettings.difficulty === 'easy'
+    const tileLayerUrl = gameSettings.showLabels
         ? selectedStyle.labeled
         : selectedStyle.nolabels;
 
@@ -132,6 +154,9 @@ function startGame() {
         maxZoom: 19,
         subdomains: 'abcd'
     }).addTo(map);
+
+    // Update toggle button state
+    updateToggleButton();
 
     nextRound();
 }
@@ -361,6 +386,32 @@ function showFinalResults() {
             `).join('');
 
     document.getElementById('roundResults').innerHTML = resultsHTML;
+}
+
+function toggleMapLabels() {
+    const checkbox = document.getElementById('toggleLabelsCheckbox');
+    gameSettings.showLabels = checkbox.checked;
+
+    // Update the tile layer
+    const selectedStyle = TILE_STYLES[CURRENT_TILE_STYLE];
+    const tileLayerUrl = gameSettings.showLabels
+        ? selectedStyle.labeled
+        : selectedStyle.nolabels;
+
+    if (tileLayer) {
+        map.removeLayer(tileLayer);
+    }
+
+    tileLayer = L.tileLayer(tileLayerUrl, {
+        attribution: selectedStyle.attribution,
+        maxZoom: 19,
+        subdomains: 'abcd'
+    }).addTo(map);
+}
+
+function updateToggleButton() {
+    const checkbox = document.getElementById('toggleLabelsCheckbox');
+    checkbox.checked = gameSettings.showLabels;
 }
 
 function resetGame() {

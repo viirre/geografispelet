@@ -47,6 +47,14 @@
                     </div>
                 </div>
 
+                <div class="option-group">
+                    <label>Zoom:</label>
+                    <div class="button-group">
+                        <button class="option-btn" data-zoom="disabled">Avstängd</button>
+                        <button class="option-btn selected" data-zoom="enabled">Påslagen</button>
+                    </div>
+                </div>
+
                 <button class="start-btn" id="startBtn">Starta spelet!</button>
             </div>
 
@@ -73,6 +81,13 @@
 
                 <div class="map-container">
                     <div id="map"></div>
+                    <div class="map-label-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleLabelsCheckbox">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Platsetiketter</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div id="feedbackContainer"></div>

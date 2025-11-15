@@ -188,6 +188,67 @@ button {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.map-label-toggle {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+}
+
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    background: #cbd5e1;
+    border-radius: 24px;
+    transition: background 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+    background: #10b981;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+}
+
 .map-container {
     position: relative;
     width: 100%;
