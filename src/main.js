@@ -226,7 +226,7 @@ function showResult(userLat, userLng) {
     // Create user's marker (red pin)
     // transform-origin is 0% 100% (bottom-left where the tip is)
     const userIcon = L.icon({
-        iconUrl: '/assets/pin_user.png',
+        iconUrl: '/pin_user.png',
         iconSize: [16, 40],
         iconAnchor: [10, 40]  // Bottom-left, where the tip is
     });
@@ -246,7 +246,7 @@ function showResult(userLat, userLng) {
 
     // Show marker pin for the correct location
     const placeIcon = L.icon({
-        iconUrl: '/assets/pin_place.png',
+        iconUrl: '/pin_place.png',
         iconSize: [16, 40],
         iconAnchor: [10, 40]  // Bottom-left, where the tip is
     });
