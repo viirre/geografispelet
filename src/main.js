@@ -272,44 +272,70 @@ function showResult(userLat, userLng) {
     // If you click within the place's "area" you get full points
     const adjustedDistance = Math.max(0, kmDistance - currentPlace.size);
 
+    // Wine regions (vin, docg, aoc) have stricter scoring - 2x harder to get points
+    const isWineRegion = ['vin', 'docg', 'aoc'].includes(currentPlace.type);
+
+    // Define distance thresholds based on place type
+    const thresholds = isWineRegion ? {
+        excellent_10: 25,   // Half of 50
+        excellent_9: 100,   // Half of 200
+        excellent_8: 200,   // Half of 400
+        good_7: 350,        // Half of 700
+        good_6: 550,        // Half of 1100
+        okay_5: 800,        // Half of 1600
+        okay_4: 1100,       // Half of 2200
+        okay_3: 1500,       // Half of 3000
+        poor_2: 2250        // Half of 4500
+    } : {
+        excellent_10: 50,
+        excellent_9: 200,
+        excellent_8: 400,
+        good_7: 700,
+        good_6: 1100,
+        okay_5: 1600,
+        okay_4: 2200,
+        okay_3: 3000,
+        poor_2: 4500
+    };
+
     // Calculate points (max 10 points) based on adjusted distance
     let points = 0;
     let feedback = '';
     let feedbackClass = '';
 
-    if (adjustedDistance < 50) {
+    if (adjustedDistance < thresholds.excellent_10) {
         points = 10;
         feedback = `🎯 Perfekt! Du var bara ${milDistance} mil bort!`;
         feedbackClass = 'excellent';
-    } else if (adjustedDistance < 200) {
+    } else if (adjustedDistance < thresholds.excellent_9) {
         points = 9;
         feedback = `⭐ Fantastiskt! Du var ${milDistance} mil bort!`;
         feedbackClass = 'excellent';
-    } else if (adjustedDistance < 400) {
+    } else if (adjustedDistance < thresholds.excellent_8) {
         points = 8;
         feedback = `🌟 Jättebra! Du var ${milDistance} mil bort!`;
         feedbackClass = 'excellent';
-    } else if (adjustedDistance < 700) {
+    } else if (adjustedDistance < thresholds.good_7) {
         points = 7;
         feedback = `👏 Riktigt bra! Du var ${milDistance} mil bort!`;
         feedbackClass = 'good';
-    } else if (adjustedDistance < 1100) {
+    } else if (adjustedDistance < thresholds.good_6) {
         points = 6;
         feedback = `👍 Bra! Du var ${milDistance} mil bort!`;
         feedbackClass = 'good';
-    } else if (adjustedDistance < 1600) {
+    } else if (adjustedDistance < thresholds.okay_5) {
         points = 5;
         feedback = `😊 Helt okej! Du var ${milDistance} mil bort!`;
         feedbackClass = 'okay';
-    } else if (adjustedDistance < 2200) {
+    } else if (adjustedDistance < thresholds.okay_4) {
         points = 4;
         feedback = `🙂 Inte så illa! Du var ${milDistance} mil bort!`;
         feedbackClass = 'okay';
-    } else if (adjustedDistance < 3000) {
+    } else if (adjustedDistance < thresholds.okay_3) {
         points = 3;
         feedback = `🤔 Du var ${milDistance} mil bort. Fortsätt öva!`;
         feedbackClass = 'okay';
-    } else if (adjustedDistance < 4500) {
+    } else if (adjustedDistance < thresholds.poor_2) {
         points = 2;
         feedback = `💪 Det var långt! Du var ${milDistance} mil bort!`;
         feedbackClass = 'poor';
