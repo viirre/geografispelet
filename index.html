@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="sv">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Geografispelet - Hitta platsen!</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🌍 Geografispelet 🌍</h1>
+                <p class="subtitle">Hitta platser runt om i världen!</p>
+            </div>
+
+            <!-- Setup Screen -->
+            <div class="setup-screen" id="setupScreen">
+                <div class="option-group">
+                    <label>Välj svårighetsgrad:</label>
+                    <div class="button-group">
+                        <button class="option-btn selected" data-difficulty="easy">Lätt</button>
+                        <button class="option-btn" data-difficulty="medium">Medium</button>
+                        <button class="option-btn" data-difficulty="hard">Svår</button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>Välj speltyp:</label>
+                    <div class="button-group">
+                        <button class="option-btn selected" data-gametype="blandat">Blandat</button>
+                        <button class="option-btn" data-gametype="lander">Bara länder</button>
+                        <button class="option-btn" data-gametype="stader">Bara städer</button>
+                        <button class="option-btn" data-gametype="vin">Vinregioner</button>
+                        <button class="option-btn" data-gametype="docg">DOCG</button>
+                        <button class="option-btn" data-gametype="aoc">AOC</button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>Antal platser:</label>
+                    <div class="button-group">
+                        <button class="option-btn" data-rounds="5">5</button>
+                        <button class="option-btn selected" data-rounds="10">10</button>
+                        <button class="option-btn" data-rounds="15">15</button>
+                        <button class="option-btn" data-rounds="20">20</button>
+                    </div>
+                </div>
+
+                <button class="start-btn" id="startBtn">Starta spelet!</button>
+            </div>
+
+            <!-- Game Screen -->
+            <div class="game-screen hidden" id="gameScreen">
+                <div class="game-info">
+                    <div class="info-item">
+                        <div class="info-label">Runda</div>
+                        <div class="info-value" id="currentRound">1</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Poäng</div>
+                        <div class="info-value" id="currentScore">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Max poäng</div>
+                        <div class="info-value" id="maxScore">100</div>
+                    </div>
+                </div>
+
+                <div class="question-box" id="questionBox">
+                    Var ligger Paris?
+                </div>
+
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+
+                <div id="feedbackContainer"></div>
+            </div>
+
+            <!-- Result Screen -->
+            <div class="result-screen hidden" id="resultScreen">
+                <div class="results">
+                    <h2>🎉 Grattis! 🎉</h2>
+                    <div class="final-score" id="finalScore">0</div>
+                    <div class="score-message" id="scoreMessage">Fantastiskt resultat!</div>
+
+                    <div class="round-results" id="roundResults"></div>
+
+                    <button class="play-again-btn" id="playAgainBtn">Spela igen!</button>
+                </div>
+            </div>
+        </div>
+        <div id="app"></div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script type="module" src="/src/main.js"></script>
+    </body>
+</html>
