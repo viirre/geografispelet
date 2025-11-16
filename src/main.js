@@ -1,216 +1,197 @@
-import './style.css'
-import places from './places.js';
+/**
+ * Geopinner - Swedish Geography Quiz Game
+ * Main entry point - coordinates modules and handles user interactions
+ */
 
-// Map tile options - try different ones to compare!
-const TILE_STYLES = {
-    voyager: {
-        labeled: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        nolabels: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        name: 'CARTO Voyager (current)'
-    },
-    positron: {
-        labeled: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        nolabels: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        name: 'CARTO Positron (clearer borders, light)'
-    },
-};
+import './style.css';
+import { GameState } from './game/state.js';
+import { MapManager } from './map/mapManager.js';
+import { calculateScore } from './game/scoring.js';
+import * as UI from './ui/screens.js';
 
-// CHANGE THIS to try different map styles: 'voyager', 'positron', etc.
-const CURRENT_TILE_STYLE = 'positron';
+// Initialize game state and map manager
+const gameState = new GameState();
+const mapManager = new MapManager('map');
 
-// Game settings
-let gameSettings = {
-    difficulty: 'easy',
-    rounds: 10,
-    gameType: 'blandat',
-    zoomEnabled: true,
-    showLabels: false  // Default to labels off
-};
+// Timer interval reference
+let timerInterval = null;
 
-// Game variables
-let currentRound = 0;
-let totalScore = 0;
-let currentPlace = null;
-let hasGuessed = false;
-let roundHistory = [];
-let map = null;
-let tileLayer = null;
-let userMarker = null;
-let placeMarker = null;
-let distanceLine = null;
-let usedPlaces = []; // Track used places to avoid duplicates
-
-// Setup screen handlers
-document.querySelectorAll('[data-difficulty]').forEach(btn => {
-    btn.addEventListener('click', function () {
-        document.querySelectorAll('[data-difficulty]').forEach(b => b.classList.remove('selected'));
-        this.classList.add('selected');
-        gameSettings.difficulty = this.dataset.difficulty;
+/**
+ * Setup event listeners for game controls
+ */
+function setupEventListeners() {
+    // Difficulty selection
+    document.querySelectorAll('[data-difficulty]').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('[data-difficulty]').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            gameState.updateSettings({ difficulty: this.dataset.difficulty });
+        });
     });
-});
 
-document.querySelectorAll('[data-gametype]').forEach(btn => {
-    btn.addEventListener('click', function () {
-        document.querySelectorAll('[data-gametype]').forEach(b => b.classList.remove('selected'));
-        this.classList.add('selected');
-        gameSettings.gameType = this.dataset.gametype;
+    // Game type selection
+    document.querySelectorAll('[data-gametype]').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('[data-gametype]').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            gameState.updateSettings({ gameType: this.dataset.gametype });
+        });
     });
-});
 
-// Rounds select dropdown
-document.getElementById('roundsSelect').addEventListener('change', function () {
-    gameSettings.rounds = parseInt(this.value);
-});
+    // Rounds selection
+    document.getElementById('roundsSelect').addEventListener('change', function () {
+        gameState.updateSettings({ rounds: parseInt(this.value) });
+    });
 
-// Zoom toggle checkbox
-document.getElementById('zoomToggle').addEventListener('change', function () {
-    gameSettings.zoomEnabled = this.checked;
-});
+    // Zoom toggle
+    document.getElementById('zoomToggle').addEventListener('change', function () {
+        gameState.updateSettings({ zoomEnabled: this.checked });
+    });
 
-// Button event listeners
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('playAgainBtn').addEventListener('click', resetGame);
-document.getElementById('toggleLabelsCheckbox').addEventListener('change', toggleMapLabels);
+    // Timer toggle
+    const timerToggle = document.getElementById('timerToggle');
+    if (timerToggle) {
+        timerToggle.addEventListener('change', function () {
+            gameState.updateSettings({ timerEnabled: this.checked });
 
-function getFilteredPlaces(difficulty, gameType) {
-    const allPlaces = places[difficulty];
-
-    switch (gameType) {
-        case 'lander':
-            return allPlaces.filter(p => p.type === 'land');
-        case 'stader':
-            return allPlaces.filter(p => p.type === 'stad');
-        case 'huvudstader':
-            return allPlaces.filter(p => p.type === 'stad' && p.capital === true);
-        case 'vin':
-            return allPlaces.filter(p => p.type === 'vin');
-        case 'docg':
-            return allPlaces.filter(p => p.type === 'docg');
-        case 'aoc':
-            return allPlaces.filter(p => p.type === 'aoc');
-        case 'blandat':
-        default:
-            return allPlaces.filter(p => p.type !== 'aoc' && p.type !== 'docg');
+            // Show/hide timer duration selector
+            const timerDurationContainer = document.getElementById('timerDurationContainer');
+            if (timerDurationContainer) {
+                timerDurationContainer.style.display = this.checked ? 'block' : 'none';
+            }
+        });
     }
+
+    // Timer duration selection
+    const timerDurationSelect = document.getElementById('timerDurationSelect');
+    if (timerDurationSelect) {
+        timerDurationSelect.addEventListener('change', function () {
+            gameState.updateSettings({ timerDuration: parseInt(this.value) });
+        });
+    }
+
+    // Labels toggle (in game)
+    document.getElementById('toggleLabelsCheckbox').addEventListener('change', function () {
+        const showLabels = this.checked;
+        gameState.updateSettings({ showLabels });
+        mapManager.toggleLabels(showLabels);
+    });
+
+    // Main buttons
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('playAgainBtn').addEventListener('click', resetGame);
 }
 
+/**
+ * Start a new game
+ */
 function startGame() {
-    // Check that there are enough places available
-    const filtered = getFilteredPlaces(gameSettings.difficulty, gameSettings.gameType);
-    if (filtered.length < gameSettings.rounds) {
-        alert(`Det finns bara ${filtered.length} platser i denna kombination. Välj färre rundor eller byt speltyp/svårighetsgrad.`);
+    // Attempt to start game
+    const result = gameState.startGame();
+
+    if (!result.success) {
+        UI.showError(result.error);
         return;
     }
 
-    document.getElementById('setupScreen').classList.add('hidden');
-    document.getElementById('gameScreen').classList.remove('hidden');
-    currentRound = 0;
-    totalScore = 0;
-    roundHistory = [];
-    usedPlaces = []; // Clear used places
-    document.getElementById('maxScore').textContent = gameSettings.rounds * 10;
+    // Show game screen
+    UI.showGameScreen();
 
-    // Initialize the map
-    if (!map) {
-        const mapOptions = {
-            center: [20, 0],
-            zoom: 2,
-            minZoom: 2,
-            maxZoom: 10,
-            worldCopyJump: true
-        };
-
-        // Disable zoom if option is set
-        if (!gameSettings.zoomEnabled) {
-            mapOptions.zoomControl = false;
-            mapOptions.scrollWheelZoom = false;
-            mapOptions.doubleClickZoom = false;
-            mapOptions.touchZoom = false;
-            mapOptions.boxZoom = false;
+    // Initialize map if needed
+    if (!mapManager.map) {
+        try {
+            mapManager.initialize({
+                zoomEnabled: gameState.settings.zoomEnabled
+            });
+        } catch (error) {
+            UI.showError(error.message);
+            return;
         }
-
-        map = L.map('map', mapOptions);
     }
 
-    // Remove old tile layer if it exists
-    if (tileLayer) {
-        map.removeLayer(tileLayer);
-    }
-
-    // Add tile layer based on showLabels setting
-    const selectedStyle = TILE_STYLES[CURRENT_TILE_STYLE];
-    const tileLayerUrl = gameSettings.showLabels
-        ? selectedStyle.labeled
-        : selectedStyle.nolabels;
-
-    tileLayer = L.tileLayer(tileLayerUrl, {
-        attribution: selectedStyle.attribution,
-        maxZoom: 19,
-        subdomains: 'abcd'
-    }).addTo(map);
+    // Set tile layer
+    mapManager.setTileStyle(undefined, gameState.settings.showLabels);
 
     // Update toggle button state
-    updateToggleButton();
+    UI.updateToggleButton(gameState.settings.showLabels);
 
+    // Start first round
     nextRound();
 }
 
+/**
+ * Start next round
+ */
 function nextRound() {
-    currentRound++;
-    hasGuessed = false;
+    // Clear map markers
+    mapManager.clearMarkers();
+    mapManager.resetView();
 
-    // Clear markers and line
-    if (userMarker) {
-        map.removeLayer(userMarker);
-        userMarker = null;
-    }
-    if (placeMarker) {
-        map.removeLayer(placeMarker);
-        placeMarker = null;
-    }
-    if (distanceLine) {
-        map.removeLayer(distanceLine);
-        distanceLine = null;
-    }
-
-    document.getElementById('feedbackContainer').innerHTML = '';
-
-    // Reset map view
-    map.setView([20, 0], 2);
-
-    // Select a random place that hasn't been used yet
-    const availablePlaces = getFilteredPlaces(gameSettings.difficulty, gameSettings.gameType);
-    let availableUnusedPlaces = availablePlaces.filter(place =>
-        !usedPlaces.some(used => used.name === place.name)
-    );
-
-    // If all places have been used, reset (shouldn't happen if there are enough places)
-    if (availableUnusedPlaces.length === 0) {
-        availableUnusedPlaces = availablePlaces;
-        usedPlaces = [];
-    }
-
-    currentPlace = availableUnusedPlaces[Math.floor(Math.random() * availableUnusedPlaces.length)];
-    usedPlaces.push(currentPlace);
+    // Get next round data from game state
+    const roundData = gameState.nextRound();
 
     // Update UI
-    document.getElementById('currentRound').textContent = `${currentRound}/${gameSettings.rounds}`;
-    document.getElementById('currentScore').textContent = totalScore;
-    document.getElementById('questionBox').textContent = `Var ligger ${currentPlace.name}?`;
+    UI.updateRoundUI(roundData);
 
-    // Add click handler to the map
-    map.getContainer().classList.add('clickable');
-    map.once('click', handleMapClick);
+    // Show/hide timer based on settings
+    if (gameState.settings.timerEnabled) {
+        UI.showTimer();
+        startRoundTimer();
+    } else {
+        UI.hideTimer();
+    }
+
+    // Enable map clicking
+    mapManager.enableClick();
+    mapManager.onMapClick(handleMapClick);
 }
 
-function handleMapClick(e) {
-    if (hasGuessed) return;
+/**
+ * Start the countdown timer for a round
+ */
+function startRoundTimer() {
+    // Clear any existing timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
 
-    hasGuessed = true;
-    map.getContainer().classList.remove('clickable');
-    map.off('click');
+    // Update display immediately
+    UI.updateTimerDisplay(gameState.timeRemaining);
+
+    // Start countdown
+    timerInterval = setInterval(() => {
+        gameState.timeRemaining--;
+        UI.updateTimerDisplay(gameState.timeRemaining);
+
+        // Time's up!
+        if (gameState.timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+
+            // Auto-submit with current map center as guess
+            if (!gameState.hasGuessed) {
+                const center = mapManager.map.getCenter();
+                handleMapClick({ latlng: center });
+            }
+        }
+    }, 1000);
+}
+
+/**
+ * Handle map click event
+ */
+function handleMapClick(e) {
+    if (gameState.hasGuessed) return;
+
+    // Stop timer if running
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    // Disable map clicking
+    mapManager.disableClick();
+    mapManager.offMapClick();
 
     const userLat = e.latlng.lat;
     const userLng = e.latlng.lng;
@@ -218,235 +199,70 @@ function handleMapClick(e) {
     showResult(userLat, userLng);
 }
 
+/**
+ * Show result for the current round
+ */
 function showResult(userLat, userLng) {
-    // Create user's marker (red pin)
-    // transform-origin is 0% 100% (bottom-left where the tip is)
-    const userIcon = L.icon({
-        iconUrl: '/pin_user.png',
-        iconSize: [16, 40],
-        iconAnchor: [10, 40]  // Bottom-left, where the tip is
-    });
+    const place = gameState.currentPlace;
 
-    userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
+    // Add markers
+    mapManager.addUserMarker(userLat, userLng);
+    mapManager.addPlaceMarker(place.lat, place.lng);
+    mapManager.drawDistanceLine(userLat, userLng, place.lat, place.lng);
 
-    // Draw line from user's guess to the correct location
-    distanceLine = L.polyline(
-        [[userLat, userLng], [currentPlace.lat, currentPlace.lng]],
-        {
-            color: '#ff6b6b',
-            weight: 3,
-            dashArray: '10, 5',
-            className: 'distance-line'
-        }
-    ).addTo(map);
+    // Calculate distance
+    const kmDistance = mapManager.calculateDistance(userLat, userLng, place.lat, place.lng);
 
-    // Show marker pin for the correct location
-    const placeIcon = L.icon({
-        iconUrl: '/pin_place.png',
-        iconSize: [16, 40],
-        iconAnchor: [10, 40]  // Bottom-left, where the tip is
-    });
+    // Calculate score
+    const scoreResult = calculateScore(kmDistance, place);
 
-    placeMarker = L.marker([currentPlace.lat, currentPlace.lng], { icon: placeIcon }).addTo(map);
+    // Submit guess to game state (handles timer bonus calculation)
+    const result = gameState.submitGuess(userLat, userLng, kmDistance, scoreResult);
 
-    // Adjust map view to show both the guess and the correct location
-    const bounds = L.latLngBounds([
-        [userLat, userLng],
-        [currentPlace.lat, currentPlace.lng]
-    ]);
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 6 });
-
-    // Calculate distance in kilometers
-    const userLatLng = L.latLng(userLat, userLng);
-    const correctLatLng = L.latLng(currentPlace.lat, currentPlace.lng);
-    const kmDistance = Math.round(userLatLng.distanceTo(correctLatLng) / 1000);
-
-    // Convert to Swedish miles (1 mil = 10 km)
-    const milDistance = (kmDistance / 10).toFixed(1);
-
-    // Adjust for the place's size - subtract the place's radius from the distance
-    // If you click within the place's "area" you get full points
-    const adjustedDistance = Math.max(0, kmDistance - currentPlace.size);
-
-    // Wine regions (vin, docg, aoc) have stricter scoring - 2x harder to get points
-    const isWineRegion = ['vin', 'docg', 'aoc'].includes(currentPlace.type);
-
-    // Define distance thresholds based on place type
-    const thresholds = isWineRegion ? {
-        excellent_10: 25,   // Half of 50
-        excellent_9: 100,   // Half of 200
-        excellent_8: 200,   // Half of 400
-        good_7: 350,        // Half of 700
-        good_6: 550,        // Half of 1100
-        okay_5: 800,        // Half of 1600
-        okay_4: 1100,       // Half of 2200
-        okay_3: 1500,       // Half of 3000
-        poor_2: 2250        // Half of 4500
-    } : {
-        excellent_10: 50,
-        excellent_9: 200,
-        excellent_8: 400,
-        good_7: 700,
-        good_6: 1100,
-        okay_5: 1600,
-        okay_4: 2200,
-        okay_3: 3000,
-        poor_2: 4500
-    };
-
-    // Calculate points (max 10 points) based on adjusted distance
-    let points = 0;
-    let feedback = '';
-    let feedbackClass = '';
-
-    if (adjustedDistance < thresholds.excellent_10) {
-        points = 10;
-        feedback = `🎯 Perfekt! Du var bara ${milDistance} mil bort!`;
-        feedbackClass = 'excellent';
-    } else if (adjustedDistance < thresholds.excellent_9) {
-        points = 9;
-        feedback = `⭐ Fantastiskt! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'excellent';
-    } else if (adjustedDistance < thresholds.excellent_8) {
-        points = 8;
-        feedback = `🌟 Jättebra! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'excellent';
-    } else if (adjustedDistance < thresholds.good_7) {
-        points = 7;
-        feedback = `👏 Riktigt bra! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'good';
-    } else if (adjustedDistance < thresholds.good_6) {
-        points = 6;
-        feedback = `👍 Bra! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'good';
-    } else if (adjustedDistance < thresholds.okay_5) {
-        points = 5;
-        feedback = `😊 Helt okej! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'okay';
-    } else if (adjustedDistance < thresholds.okay_4) {
-        points = 4;
-        feedback = `🙂 Inte så illa! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'okay';
-    } else if (adjustedDistance < thresholds.okay_3) {
-        points = 3;
-        feedback = `🤔 Du var ${milDistance} mil bort. Fortsätt öva!`;
-        feedbackClass = 'okay';
-    } else if (adjustedDistance < thresholds.poor_2) {
-        points = 2;
-        feedback = `💪 Det var långt! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'poor';
-    } else {
-        points = 1;
-        feedback = `🌍 Wow, det var riktigt långt! Du var ${milDistance} mil bort!`;
-        feedbackClass = 'poor';
-    }
-
-    totalScore += points;
-    roundHistory.push({
-        place: currentPlace.name,
-        distance: milDistance,
-        points: points
-    });
+    // Fit map to show both points
+    mapManager.fitBoundsToPoints(userLat, userLng, place.lat, place.lng);
 
     // Show feedback
-    const feedbackDiv = document.createElement('div');
-    feedbackDiv.className = `feedback ${feedbackClass}`;
-    feedbackDiv.innerHTML = `
-                <div>${feedback}</div>
-                <div style="font-size: 1.5em; margin-top: 10px;">+${points} poäng</div>
-            `;
-    document.getElementById('feedbackContainer').appendChild(feedbackDiv);
+    UI.showRoundFeedback(result, gameState.settings.timerEnabled);
 
-    // Show next button or finish
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'next-btn';
-
-    if (currentRound < gameSettings.rounds) {
-        nextBtn.textContent = 'Nästa plats →';
-        nextBtn.onclick = nextRound;
-    } else {
-        nextBtn.textContent = 'Se resultat! 🎉';
-        nextBtn.onclick = showFinalResults;
-    }
-
-    document.getElementById('feedbackContainer').appendChild(nextBtn);
-
-    // Update score
-    document.getElementById('currentScore').textContent = totalScore;
+    // Add next/finish button
+    const isLastRound = gameState.isGameComplete();
+    UI.addActionButton(isLastRound, nextRound, showFinalResults);
 }
 
+/**
+ * Show final results
+ */
 function showFinalResults() {
-    document.getElementById('gameScreen').classList.add('hidden');
-    document.getElementById('resultScreen').classList.remove('hidden');
+    // Hide timer
+    UI.hideTimer();
 
-    const maxPossibleScore = gameSettings.rounds * 10;
-    const percentage = (totalScore / maxPossibleScore) * 100;
+    // Get final results from game state
+    const finalResults = gameState.getFinalResults();
 
-    document.getElementById('finalScore').textContent = `${totalScore}/${maxPossibleScore}`;
-
-    let message = '';
-    if (percentage >= 90) {
-        message = '🏆 Fantastiskt! Du är en geografigenius!';
-    } else if (percentage >= 75) {
-        message = '⭐ Excellent! Mycket bra jobbat!';
-    } else if (percentage >= 60) {
-        message = '👍 Bra jobbat! Fortsätt öva!';
-    } else if (percentage >= 40) {
-        message = '😊 Inte dåligt! Du lär dig mer och mer!';
-    } else {
-        message = '💪 Bra försök! Prova igen så blir det bättre!';
-    }
-
-    document.getElementById('scoreMessage').textContent = message;
-
-    // Show round history
-    const resultsHTML = roundHistory.map((round, index) => `
-                <div class="round-item">
-                    <span class="round-place">${index + 1}. ${round.place}</span>
-                    <span class="round-score">${round.points} poäng (${round.distance} mil)</span>
-                </div>
-            `).join('');
-
-    document.getElementById('roundResults').innerHTML = resultsHTML;
+    // Show results screen
+    UI.showFinalResults(finalResults);
 }
 
-function toggleMapLabels() {
-    const checkbox = document.getElementById('toggleLabelsCheckbox');
-    gameSettings.showLabels = checkbox.checked;
-
-    // Update the tile layer
-    const selectedStyle = TILE_STYLES[CURRENT_TILE_STYLE];
-    const tileLayerUrl = gameSettings.showLabels
-        ? selectedStyle.labeled
-        : selectedStyle.nolabels;
-
-    if (tileLayer) {
-        map.removeLayer(tileLayer);
-    }
-
-    tileLayer = L.tileLayer(tileLayerUrl, {
-        attribution: selectedStyle.attribution,
-        maxZoom: 19,
-        subdomains: 'abcd'
-    }).addTo(map);
-}
-
-function updateToggleButton() {
-    const checkbox = document.getElementById('toggleLabelsCheckbox');
-    checkbox.checked = gameSettings.showLabels;
-}
-
+/**
+ * Reset game and return to setup
+ */
 function resetGame() {
-    document.getElementById('resultScreen').classList.add('hidden');
-    document.getElementById('setupScreen').classList.remove('hidden');
-
-    // Reset the map
-    if (map) {
-        if (userMarker) map.removeLayer(userMarker);
-        if (placeMarker) map.removeLayer(placeMarker);
-        if (distanceLine) map.removeLayer(distanceLine);
-        placeMarker = null;
-        userMarker = null;
-        distanceLine = null;
+    // Clear timer if running
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
     }
+
+    // Clear map
+    mapManager.clearMarkers();
+
+    // Reset game state
+    gameState.reset();
+
+    // Show setup screen
+    UI.showSetupScreen();
 }
+
+// Initialize when DOM is ready
+setupEventListeners();

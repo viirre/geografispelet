@@ -230,6 +230,44 @@ button {
     font-weight: 600;
     box-shadow: 0 4px 16px rgba(30, 41, 59, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.question-text {
+    flex: 0 1 auto;
+}
+
+.timer-display {
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-size: 0.75em;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(15, 118, 110, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    flex: 0 0 auto;
+    min-width: 70px;
+}
+
+.timer-display.timer-warning {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.4);
+    animation: pulse-timer 1s ease-in-out infinite;
+}
+
+@keyframes pulse-timer {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 .map-label-toggle {
@@ -573,6 +611,14 @@ button {
         margin-bottom: 12px;
         font-size: 1.1em;
         border-radius: 8px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .timer-display {
+        font-size: 0.7em;
+        padding: 6px 16px;
+        min-width: 60px;
     }
 
     /* Maximize map height - critical for mobile */
@@ -687,6 +733,12 @@ button {
         padding: 10px 14px;
         margin-bottom: 10px;
         font-size: 1em;
+    }
+
+    .timer-display {
+        font-size: 0.65em;
+        padding: 5px 12px;
+        min-width: 50px;
     }
 
     /* Ensure button visibility on small phones */

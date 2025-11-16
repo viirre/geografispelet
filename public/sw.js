@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `geopinner-${CACHE_VERSION}`;
 
 // Resources to cache immediately on install
