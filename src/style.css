@@ -576,10 +576,11 @@ button {
     }
 
     /* Maximize map height - critical for mobile */
+    /* Calculation: 100vh - (header + game-info + question-box + feedback + button + padding) */
     .map-container {
-        height: calc(100vh - 280px);
-        min-height: 300px;
-        max-height: 500px;
+        height: calc(100vh - 360px);
+        min-height: 280px;
+        max-height: 450px;
         border-radius: 8px;
     }
 
@@ -688,10 +689,12 @@ button {
         font-size: 1em;
     }
 
-    /* Even more map space on small phones */
+    /* Ensure button visibility on small phones */
+    /* More conservative to guarantee "Next question" button is visible */
     .map-container {
-        height: calc(100vh - 240px);
-        min-height: 280px;
+        height: calc(100vh - 340px);
+        min-height: 260px;
+        max-height: 400px;
     }
 
     .map-label-toggle {
