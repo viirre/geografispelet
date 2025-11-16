@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `geopinner-${CACHE_VERSION}`;
 
 // Resources to cache immediately on install
@@ -101,14 +101,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle app resources - cache first, network fallback
+  // Handle app resources - network first, cache fallback
   event.respondWith(
-    caches.match(request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         // Don't cache non-successful responses
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
@@ -127,12 +123,20 @@ self.addEventListener('fetch', (event) => {
         }
 
         return response;
-      }).catch(() => {
-        // If both cache and network fail, return offline page
-        if (request.destination === 'document') {
-          return caches.match('/index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        // Network failed, try cache
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If both cache and network fail, return offline page for documents
+          if (request.destination === 'document') {
+            return caches.match('/index.html');
+          }
+          // For other resources, throw error to let browser handle it
+          throw new Error('Network request failed and no cache available');
+        });
+      })
   );
 });
