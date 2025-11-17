@@ -19,13 +19,13 @@ export class GameState {
     reset() {
         // Game settings
         this.settings = {
-            difficulty: 'easy',
+            difficulty: 'medium',
             rounds: 10,
             gameTypes: ['blandat'],  // Changed to array for multi-selection
             zoomEnabled: true,
             showLabels: false,
-            timerEnabled: false,  // New: timer mode
-            timerDuration: 10     // New: seconds per round (default 10s)
+            timerEnabled: true,   // Timer enabled by default
+            timerDuration: 10     // Seconds per round (default 10s)
         };
 
         // Game progress

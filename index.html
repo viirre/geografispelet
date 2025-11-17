@@ -2,9 +2,11 @@
 <html lang="sv">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/png" href="/pin_user.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Geografispelet - Hitta platsen!</title>
+        <title>GeoPinner - Hitta platsen!</title>
 
         <!-- PWA Meta Tags -->
         <meta name="theme-color" content="#1e3a8a" />
@@ -23,7 +25,10 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>🌍 Geografispelet 🌍</h1>
+                <div class="header-title">
+                    <img src="/logo.svg" alt="GeoPinner Logo" class="header-logo" />
+                    <h1>GeoPinner</h1>
+                </div>
                 <p class="subtitle">Hitta platser runt om i världen!</p>
             </div>
 
@@ -32,8 +37,8 @@
                 <div class="option-group">
                     <label>Svårighetsgrad:</label>
                     <div class="pill-group">
-                        <button class="pill-btn selected" data-difficulty="easy">Lätt</button>
-                        <button class="pill-btn" data-difficulty="medium">Medium</button>
+                        <button class="pill-btn" data-difficulty="easy">Lätt</button>
+                        <button class="pill-btn selected" data-difficulty="medium">Medium</button>
                         <button class="pill-btn" data-difficulty="hard">Svår</button>
                     </div>
                 </div>
@@ -77,12 +82,12 @@
                 <div class="option-group">
                     <label for="timerToggle">Tidsbegränsning:</label>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="timerToggle">
+                        <input type="checkbox" id="timerToggle" checked>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
 
-                <div class="option-group" id="timerDurationContainer" style="display: none;">
+                <div class="option-group" id="timerDurationContainer">
                     <label for="timerDurationSelect">Tid per runda:</label>
                     <select id="timerDurationSelect" class="select-control">
                         <option value="5">5 sekunder</option>
