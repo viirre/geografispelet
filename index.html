@@ -45,6 +45,11 @@
                         <button class="pill-btn" data-gametype="lander">Länder</button>
                         <button class="pill-btn" data-gametype="stader">Städer</button>
                         <button class="pill-btn" data-gametype="huvudstader">Huvudstäder</button>
+                        <button class="pill-btn" data-gametype="oar">Öar</button>
+                        <button class="pill-btn" data-gametype="platser">Platser</button>
+                        <button class="pill-btn" id="vinerToggle">Viner</button>
+                    </div>
+                    <div class="pill-group wine-submenu" id="wineSubmenu" style="display: none;">
                         <button class="pill-btn" data-gametype="vin">Vinregioner</button>
                         <button class="pill-btn" data-gametype="docg">DOCG</button>
                         <button class="pill-btn" data-gametype="aoc">AOC</button>
@@ -80,9 +85,10 @@
                 <div class="option-group" id="timerDurationContainer" style="display: none;">
                     <label for="timerDurationSelect">Tid per runda:</label>
                     <select id="timerDurationSelect" class="select-control">
+                        <option value="5">5 sekunder</option>
+                        <option value="10" selected>10 sekunder</option>
+                        <option value="20">20 sekunder</option>
                         <option value="30">30 sekunder</option>
-                        <option value="60" selected>60 sekunder</option>
-                        <option value="90">90 sekunder</option>
                     </select>
                 </div>
 

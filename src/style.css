@@ -93,6 +93,10 @@ h1 {
     text-transform: uppercase;
 }
 
+.wine-submenu {
+    margin-top: 8px;
+}
+
 .inline-control {
     display: flex;
     align-items: center;
@@ -145,6 +149,20 @@ button {
     color: white;
     border-color: #1e293b;
     box-shadow: 0 2px 8px rgba(30, 41, 59, 0.25);
+}
+
+.pill-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f8fafc;
+    color: #94a3b8;
+    border-color: #f1f5f9;
+}
+
+.pill-btn:disabled:hover {
+    transform: none;
+    background: #f8fafc;
+    border-color: #f1f5f9;
 }
 
 .select-control {

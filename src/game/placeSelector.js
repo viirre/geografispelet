@@ -6,31 +6,60 @@
 import places from '../places.js';
 
 /**
- * Filter places by difficulty and game type
+ * Filter places by difficulty and game types
  * @param {string} difficulty - 'easy', 'medium', or 'hard'
- * @param {string} gameType - 'blandat', 'lander', 'stader', 'huvudstader', 'vin', 'docg', 'aoc'
+ * @param {Array<string>} gameTypes - Array of game types: 'blandat', 'lander', 'stader', 'huvudstader', 'oar', 'platser', 'vin', 'docg', 'aoc'
  * @returns {Array} Filtered places
  */
-export function getFilteredPlaces(difficulty, gameType) {
+export function getFilteredPlaces(difficulty, gameTypes) {
     const allPlaces = places[difficulty];
 
-    switch (gameType) {
-        case 'lander':
-            return allPlaces.filter(p => p.type === 'land');
-        case 'stader':
-            return allPlaces.filter(p => p.type === 'stad');
-        case 'huvudstader':
-            return allPlaces.filter(p => p.type === 'stad' && p.capital === true);
-        case 'vin':
-            return allPlaces.filter(p => p.type === 'vin');
-        case 'docg':
-            return allPlaces.filter(p => p.type === 'docg');
-        case 'aoc':
-            return allPlaces.filter(p => p.type === 'aoc');
-        case 'blandat':
-        default:
-            return allPlaces.filter(p => p.type !== 'aoc' && p.type !== 'docg');
+    // Handle single string for backwards compatibility
+    const types = Array.isArray(gameTypes) ? gameTypes : [gameTypes];
+
+    // If "blandat" is selected, it's exclusive - return mixed selection
+    if (types.includes('blandat')) {
+        return allPlaces.filter(p => p.type !== 'aoc' && p.type !== 'docg');
     }
+
+    // Otherwise, collect all places matching ANY of the selected types (OR logic)
+    const matchingPlaces = new Set();
+
+    types.forEach(gameType => {
+        let filtered = [];
+
+        switch (gameType) {
+            case 'lander':
+                filtered = allPlaces.filter(p => p.type === 'land');
+                break;
+            case 'stader':
+                filtered = allPlaces.filter(p => p.type === 'stad');
+                break;
+            case 'huvudstader':
+                filtered = allPlaces.filter(p => p.type === 'stad' && p.capital === true);
+                break;
+            case 'oar':
+                filtered = allPlaces.filter(p => p.type === 'ö');
+                break;
+            case 'platser':
+                filtered = allPlaces.filter(p => p.type === 'plats');
+                break;
+            case 'vin':
+                filtered = allPlaces.filter(p => p.type === 'vin');
+                break;
+            case 'docg':
+                filtered = allPlaces.filter(p => p.type === 'docg');
+                break;
+            case 'aoc':
+                filtered = allPlaces.filter(p => p.type === 'aoc');
+                break;
+        }
+
+        // Add to set (automatically handles duplicates, e.g., if "stader" and "huvudstader" both selected)
+        filtered.forEach(place => matchingPlaces.add(place));
+    });
+
+    return Array.from(matchingPlaces);
 }
 
 /**
@@ -40,12 +69,12 @@ export function getFilteredPlaces(difficulty, gameType) {
 export class PlaceSelector {
     /**
      * @param {string} difficulty - Game difficulty level
-     * @param {string} gameType - Type of game being played
+     * @param {Array<string>} gameTypes - Array of game types being played
      */
-    constructor(difficulty, gameType) {
+    constructor(difficulty, gameTypes) {
         this.difficulty = difficulty;
-        this.gameType = gameType;
-        this.allPlaces = getFilteredPlaces(difficulty, gameType);
+        this.gameTypes = gameTypes;
+        this.allPlaces = getFilteredPlaces(difficulty, gameTypes);
         this.shuffled = [];
         this.index = 0;
         this._reshuffle();

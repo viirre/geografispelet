@@ -21,11 +21,11 @@ export class GameState {
         this.settings = {
             difficulty: 'easy',
             rounds: 10,
-            gameType: 'blandat',
+            gameTypes: ['blandat'],  // Changed to array for multi-selection
             zoomEnabled: true,
             showLabels: false,
             timerEnabled: false,  // New: timer mode
-            timerDuration: 60     // New: seconds per round
+            timerDuration: 10     // New: seconds per round (default 10s)
         };
 
         // Game progress
@@ -59,7 +59,7 @@ export class GameState {
         // Create place selector
         this.placeSelector = new PlaceSelector(
             this.settings.difficulty,
-            this.settings.gameType
+            this.settings.gameTypes
         );
 
         // Validate enough places available

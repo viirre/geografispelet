@@ -17,6 +17,30 @@ const mapManager = new MapManager('map');
 let timerInterval = null;
 
 /**
+ * Helper function to collect and update selected game types
+ */
+function updateGameTypes() {
+    const selectedButtons = document.querySelectorAll('[data-gametype].selected');
+    const selectedTypes = Array.from(selectedButtons).map(btn => btn.dataset.gametype);
+
+    const vinerToggle = document.getElementById('vinerToggle');
+    const isVinerMode = vinerToggle && vinerToggle.classList.contains('selected');
+
+    // Validate: ensure at least one is selected (but only if not in Viner mode or has wine selections)
+    if (selectedTypes.length === 0 && !isVinerMode) {
+        // Auto-select "Blandat" if nothing is selected and not in Viner mode
+        const blandatBtn = document.querySelector('[data-gametype="blandat"]');
+        if (blandatBtn && !blandatBtn.disabled) {
+            blandatBtn.classList.add('selected');
+            selectedTypes.push('blandat');
+        }
+    }
+
+    // Update game state with array
+    gameState.updateSettings({ gameTypes: selectedTypes });
+}
+
+/**
  * Setup event listeners for game controls
  */
 function setupEventListeners() {
@@ -29,12 +53,99 @@ function setupEventListeners() {
         });
     });
 
-    // Game type selection
+    // Viner toggle button - shows wine submenu and disables other options
+    const vinerToggle = document.getElementById('vinerToggle');
+    const wineSubmenu = document.getElementById('wineSubmenu');
+    const mainGameTypeButtons = document.querySelectorAll('[data-gametype]');
+    const nonWineButtons = Array.from(mainGameTypeButtons).filter(btn =>
+        !btn.closest('#wineSubmenu')
+    );
+
+    if (vinerToggle && wineSubmenu) {
+        vinerToggle.addEventListener('click', function () {
+            const wasActive = this.classList.contains('selected');
+
+            if (!wasActive) {
+                // Activate Viner mode
+                this.classList.add('selected');
+                wineSubmenu.style.display = 'flex';
+
+                // Disable and deselect all non-wine buttons
+                nonWineButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('selected');
+                });
+
+                // Auto-select first wine type if none selected
+                const wineButtons = wineSubmenu.querySelectorAll('[data-gametype]');
+                const hasSelection = Array.from(wineButtons).some(btn => btn.classList.contains('selected'));
+                if (!hasSelection && wineButtons[0]) {
+                    wineButtons[0].classList.add('selected');
+                }
+            } else {
+                // Deactivate Viner mode
+                this.classList.remove('selected');
+                wineSubmenu.style.display = 'none';
+
+                // Re-enable all non-wine buttons
+                nonWineButtons.forEach(btn => {
+                    btn.disabled = false;
+                });
+
+                // Deselect all wine types
+                wineSubmenu.querySelectorAll('[data-gametype]').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+
+                // Auto-select Blandat
+                const blandatBtn = document.querySelector('[data-gametype="blandat"]');
+                if (blandatBtn) {
+                    blandatBtn.classList.add('selected');
+                }
+            }
+
+            // Update game types
+            updateGameTypes();
+        });
+    }
+
+    // Game type selection - multi-select with toggle behavior
     document.querySelectorAll('[data-gametype]').forEach(btn => {
         btn.addEventListener('click', function () {
-            document.querySelectorAll('[data-gametype]').forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-            gameState.updateSettings({ gameType: this.dataset.gametype });
+            // Ignore if button is disabled
+            if (this.disabled) return;
+
+            const clickedType = this.dataset.gametype;
+            const isBlandat = clickedType === 'blandat';
+            const isInWineSubmenu = this.closest('#wineSubmenu');
+
+            // If clicking a wine type, just toggle it
+            if (isInWineSubmenu) {
+                this.classList.toggle('selected');
+                updateGameTypes();
+                return;
+            }
+
+            // For main game types (non-wine)
+            const wasSelected = this.classList.contains('selected');
+
+            if (isBlandat) {
+                // Selecting "Blandat" deselects all others
+                if (!wasSelected) {
+                    nonWineButtons.forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                }
+            } else {
+                // Selecting any other type deselects "Blandat"
+                const blandatBtn = document.querySelector('[data-gametype="blandat"]');
+                if (blandatBtn) blandatBtn.classList.remove('selected');
+
+                // Toggle the clicked button
+                this.classList.toggle('selected');
+            }
+
+            // Update game state with array of selected types
+            updateGameTypes();
         });
     });
 
@@ -168,13 +279,50 @@ function startRoundTimer() {
             clearInterval(timerInterval);
             timerInterval = null;
 
-            // Auto-submit with current map center as guess
+            // Handle timeout - award 0 points
             if (!gameState.hasGuessed) {
-                const center = mapManager.map.getCenter();
-                handleMapClick({ latlng: center });
+                handleTimeout();
             }
         }
     }, 1000);
+}
+
+/**
+ * Handle timeout when timer runs out without a guess
+ */
+function handleTimeout() {
+    if (gameState.hasGuessed) return;
+
+    // Disable map clicking
+    mapManager.disableClick();
+    mapManager.offMapClick();
+
+    const place = gameState.currentPlace;
+
+    // Show only the correct location marker (no user marker)
+    mapManager.addPlaceMarker(place.lat, place.lng);
+
+    // Center map on the correct location
+    mapManager.map.setView([place.lat, place.lng], 4);
+
+    // Create a timeout result with 0 points
+    const scoreResult = {
+        points: 0,
+        distance: 0,
+        feedback: 'poor',
+        message: 'Tiden tog slut!',
+        emoji: '⏱️'
+    };
+
+    // Submit timeout to game state
+    const result = gameState.submitGuess(null, null, null, scoreResult);
+
+    // Show feedback
+    UI.showRoundFeedback(result, gameState.settings.timerEnabled);
+
+    // Add next/finish button
+    const isLastRound = gameState.isGameComplete();
+    UI.addActionButton(isLastRound, nextRound, showFinalResults);
 }
 
 /**

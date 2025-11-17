@@ -147,7 +147,7 @@ const places = {
         { name: "Operahuset i Sydney", lat: -33.8568, lng: 151.2153, type: "plats", size: 1 },
         { name: "Golden Gate Bridge", lat: 37.8199, lng: -122.4783, type: "plats", size: 2 },
         { name: "Tower Bridge", lat: 51.5055, lng: -0.0754, type: "plats", size: 1 },
-        { name: "Arc de Triomphe", lat: 48.8738, lng: 2.2950, type: "plats", size: 1 },
+        { name: "Triumfbågen", lat: 48.8738, lng: 2.2950, type: "plats", size: 1 },
         { name: "Louvren", lat: 48.8606, lng: 2.3376, type: "plats", size: 1 },
         { name: "Vatikanstaten", lat: 41.9029, lng: 12.4534, type: "plats", size: 1 },
         { name: "Petra", lat: 30.3285, lng: 35.4444, type: "plats", size: 2 },
